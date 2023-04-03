@@ -21,13 +21,20 @@ program
   )
   .action((variables: string[]) => {
     const missingVariables = [] as string[];
+    const wrongVariables = [] as string[];
 
     for (const variable of variables) {
-      if (!process.env[variable]) {
+      if (variable.includes("=")) {
+        const [key, value] = variable.split("=");
+        if (process.env[key] !== value) {
+          wrongVariables.push(variable);
+        }
+      } else if (!process.env[variable]) {
         missingVariables.push(variable);
       }
     }
 
+    let exit = false;
     if (missingVariables.length > 0) {
       console.error(
         red(
@@ -36,6 +43,19 @@ program
           } missing and must be defined `
         )
       );
+      exit = true;
+    }
+    if (wrongVariables.length > 0) {
+      console.error(
+        red(
+          `${bold(wrongVariables.join(", "))} - Environment ${
+            wrongVariables.length > 1 ? "variables are" : "variable is"
+          } incorrect and must be defined `
+        )
+      );
+      exit = true;
+    }
+    if (exit) {
       process.exit(1);
     }
   });

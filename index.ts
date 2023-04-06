@@ -21,13 +21,22 @@ program
   )
   .action((variables: string[]) => {
     const missingVariables = [] as string[];
-    const wrongVariables = [] as string[];
+    const wrongVariables = [] as {
+      key: string;
+      value: string;
+      currentValue?: string;
+    }[];
 
     for (const variable of variables) {
       if (variable.includes("=")) {
         const [key, value] = variable.split("=");
+
         if (process.env[key] !== value) {
-          wrongVariables.push(variable);
+          wrongVariables.push({
+            key,
+            value,
+            currentValue: process.env[key],
+          });
         }
       } else if (!process.env[variable]) {
         missingVariables.push(variable);
@@ -48,9 +57,14 @@ program
     if (wrongVariables.length > 0) {
       console.error(
         red(
-          `${bold(wrongVariables.join(", "))} - Environment ${
-            wrongVariables.length > 1 ? "variables are" : "variable is"
-          } incorrect and must be defined `
+          wrongVariables
+            .map(
+              ({ key, value, currentValue }) =>
+                `${bold(key)} - Environment variable must be ${bold(
+                  value
+                )} but is ${bold(currentValue ?? "undefined")}`
+            )
+            .join("\n")
         )
       );
       exit = true;

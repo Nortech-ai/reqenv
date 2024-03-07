@@ -1,17 +1,21 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import { Command } from "commander";
 import { readFileSync } from "fs";
-import { bold, red } from "kleur";
+import { bold, red, yellow } from "kleur";
 import type { IPackageJson } from "package-json-type";
 import { join } from "path";
-
+import { createInterface } from "readline";
 const program = new Command();
 
 const packageDetails = getCurrentPackageDetails();
 program
   .version(packageDetails.version!)
   .name(packageDetails.name!.replace("@nortech/", ""))
+  .option(
+    "-r|--request",
+    "Request the missing variables from stdin, outputs for eval"
+  )
   .description(packageDetails.description!);
 
 program
@@ -19,7 +23,7 @@ program
     "<variables...>",
     "What variables you want to check e.g AWS_KEY WORKSPACE"
   )
-  .action((variables: string[]) => {
+  .action((variables: string[], opts: { request: boolean }) => {
     const missingVariables = [] as string[];
     const wrongVariables = [] as {
       key: string;
@@ -45,14 +49,39 @@ program
 
     let exit = false;
     if (missingVariables.length > 0) {
-      console.error(
-        red(
-          `${bold(missingVariables.join(", "))} - Environment ${
-            missingVariables.length > 1 ? "variables are" : "variable is"
-          } missing and must be defined `
-        )
-      );
-      exit = true;
+      if (opts.request) {
+        console.log(
+          yellow(
+            `${bold(missingVariables.join(", "))} - Environment ${
+              missingVariables.length > 1 ? "variables are" : "variable is"
+            } missing and must be defined `
+          )
+        );
+
+        for (const variable of missingVariables) {
+          const rl = createInterface({
+            input: process.stdin,
+            output: process.stderr,
+          });
+          rl.question(
+            `Please enter the value for ${bold(variable)}: `,
+            (value) => {
+              process.env[variable] = value;
+              console.log(`export ${variable}="${value.replace(/"/g, '\\"')}"`);
+              rl.close();
+            }
+          );
+        }
+      } else {
+        console.error(
+          red(
+            `${bold(missingVariables.join(", "))} - Environment ${
+              missingVariables.length > 1 ? "variables are" : "variable is"
+            } missing and must be defined `
+          )
+        );
+        exit = true;
+      }
     }
     if (wrongVariables.length > 0) {
       console.error(

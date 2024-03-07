@@ -50,7 +50,7 @@ program
     let exit = false;
     if (missingVariables.length > 0) {
       if (opts.request) {
-        console.log(
+        console.error(
           yellow(
             `${bold(missingVariables.join(", "))} - Environment ${
               missingVariables.length > 1 ? "variables are" : "variable is"

@@ -1,6 +1,6 @@
 {
   "name": "@nortech/reqenv",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Require environment variables from your npm scripts with a self evident error message",
   "main": "index.js",
   "repository": "https://github.com/Nortech-ai/reqenv",
